@@ -1,0 +1,654 @@
+function checkFormat() {
+  if( document.createElement('video').canPlayType('video/mp4') ) {
+    return 'mp4';
+  } else if( document.createElement('video').canPlayType('video/ogv') ) {
+    return 'ogv';
+  } else if( document.createElement('video').canPlayType('video/webm') ) {
+    return 'webm';
+  } else {
+    return 'mp4';
+  }
+}
+
+var supportedVideoFormat = checkFormat();
+var APPS = {};
+APPS.videoPath =  gtdu + '/library/video/';
+APPS.audioPath =  gtdu + '/library/mp3/';
+APPS.audioViocePath = APPS.audioPath + curr_l + '/';
+APPS.animaticLoaded = false;
+APPS.mediaElements = {
+  animatic: [
+    {
+      src: APPS.videoPath + 'animatic.' + supportedVideoFormat,
+      type: 'video/' + supportedVideoFormat,
+      loaded: 0,
+      progress: null
+    }
+  ],
+  audio: [
+    { src: APPS.audioPath + 'music.mp3', id: '#animatic-music-bg', loaded: 0, progress: null },
+    { src: APPS.audioViocePath + '1.mp3', id: '#animatic-music-first', loaded: 0, progress: null, status: null },
+    { src: APPS.audioViocePath + '2.mp3', id: '#animatic-music-scroll', loaded: 0, progress: null },
+    { src: APPS.audioViocePath + '3.mp3', id: '#animatic-music-pull', loaded: 0, progress: null },
+    { src: APPS.audioViocePath + '4.mp3', id: '#animatic-music-blend', loaded: 0, progress: null },
+    { src: APPS.audioViocePath + '5.mp3', id: '#animatic-music-squeeze', loaded: 0, progress: null },
+    { src: APPS.audioViocePath + '6.mp3', id: '#animatic-music-twitch', loaded: 0, progress: null }
+  ]
+};
+
+APPS.addSourceToMedia = function( element, src, type ) {
+  var source = document.createElement( 'source' );
+  source.src = src;
+  if( type ) {
+    source.type = type;
+  }
+  element.appendChild(source);
+};
+
+APPS.mediaLoadHandler = function( element, type, i ) {
+  if( element.readyState == 0 ) return;
+  if( element.duration ) {
+    if( APPS.mediaElements[ type ][ i ].loaded >= 100 ) {
+      APPS.mediaElements[ type ][ i ].loaded = 100;
+      element.currentTime = 0;
+      clearInterval( APPS.mediaElements[ type ][ i ].progress );
+    } else {
+      APPS.mediaElements[ type ][ i ].loaded = ( element.buffered.end( 0 ) / element.duration ) * 100;
+      element.currentTime = element.buffered.end( 0 );
+    }
+    APPS.mediaElementsProgressUpdate();
+  }
+};
+
+APPS.initAnimatic = function() {
+  for( var i = 0; i < APPS.mediaElements.animatic.length; i++ ) {
+    APPS.addSourceToMedia( $('#animatic-video')[0], APPS.mediaElements.animatic[ i ].src, APPS.mediaElements.animatic[ i ].type );
+  }
+  //for( var i = 0; i < APPS.mediaElements.animatic.length; i++ ) {
+  $('#animatic-video')[0].src = APPS.mediaElements.animatic[ 0 ].src;
+  //}
+  //$('#animatic-video').on('loadedmetadata.animatic', function () {
+    //APPS.mediaElements.animatic[0].progress = setInterval( function() { APPS.mediaLoadHandler($('#animatic-video')[0], 'animatic', 0); }, 250);
+  //});
+  $('#animatic-video').load();
+  $('#animatic-video').on('canplaythrough.animatic', function ( e ) {
+    APPS.mediaElements.animatic[0].loaded = 100;
+    APPS.mediaLoadHandler($('#animatic-video')[0], 'animatic', 0);
+  });
+};
+
+APPS.initAudioTracks = function() {
+  for( var i = 0; i < APPS.mediaElements.audio.length; i++ ) {
+    (function(i) {
+      $( APPS.mediaElements.audio[ i ].id )[ 0 ].src = APPS.mediaElements.audio[ i ].src;
+      $(APPS.mediaElements.audio[i].id).on('canplaythrough.animatic', function () {
+        //APPS.mediaElements.audio[i].progress = setInterval( function() { APPS.mediaLoadHandler($(APPS.mediaElements.audio[i].id)[0], 'audio', i)}, 250);
+        //APPS.mediaElements.audio[0].loaded = 100;
+        APPS.mediaElements.audio[i].loaded = 100;
+        APPS.mediaLoadHandler($(APPS.mediaElements.audio[i].id)[0], 'audio', i);
+      });
+      //$(APPS.mediaElements.audio[i].id).on('progress.animatic canplay.animatic canplaytrough.animatic', function ( e ) {
+      //  APPS.mediaLoadHandler($(APPS.mediaElements.audio[i].id)[0], 'audio', i);
+      //});
+    })(i);
+  }
+};
+
+APPS.mediaElementsProgressUpdate = function() {
+  if( APPS.animaticLoaded ) return;
+  var loaded = 0;
+  for( var i = 0, len = APPS.mediaElements.audio.length; i < len; i++ ) {
+    loaded += APPS.mediaElements.audio[ i ].loaded / 100 * ( 49 / len );
+  }
+
+  loaded += APPS.mediaElements.animatic[ 0 ].loaded / 100 * 51;
+
+  if( loaded >= 100 ) {
+    if ( $('.apps-age-page-content').hasClass('hidden') ) {
+        launchMedia();
+    }
+    APPS.animaticLoaded = true;
+  }
+
+  var rounded_progress = Math.floor(loaded);
+  $( '.animatic-loader .animatic-loader-circles span').eq( Math.ceil( rounded_progress / 25 ) - 1 ).addClass('active').prevAll().addClass('active');
+  //console.log( loaded + '%' );
+};
+
+function launchMedia() {
+    $('#animatic-video').off('.animatic');
+    //console.log('loaded')
+    for( var i = 0; i < APPS.mediaElements.audio.length; i++ ) {
+        $(APPS.mediaElements.audio[i].id).off('.animatic');
+    }
+    //$('#animatic-video')[ 0 ].currentTime = 0;
+    $('.animatic-music-step').each( function() {
+        this.currentTime = 0;
+    });
+    $('#animatic-video').fadeIn( function() {
+        $( '.animatic-loader').fadeOut( function() {
+            $( '.animatic-index-title').fadeTo( 'slow', 1, function() {
+                $( ".animatic-index-description" ).fadeTo( "slow" , 1 );
+            });
+        });
+    });
+    //$( '#animatic-music-bg' )[ 0 ].currentTime = 0;
+
+    // Save Promise status in browser
+    APPS.mediaElements.audio[0].status = $( '#animatic-music-bg' )[ 0 ].play();
+    $animaticMusicFirst = $( '#animatic-music-first' )[ 0 ].play();
+
+    if ($animaticMusicFirst !== undefined) {
+        $animaticMusicFirst.catch(error => {
+            // Auto-play was prevented
+            setTimeout(function () {
+                $( '#animatic-music-first').trigger( 'ended' );
+            }, 2000);
+        });
+    }
+
+    $( '#animatic-music-bg' ).on('timeupdate', function(){
+        if( this.currentTime > 1 ) {
+            if (this.currentTime > this.duration - 2) {
+                this.currentTime = 0;
+                this.play();
+            }
+        }
+    });
+
+}
+
+if(
+    $('#animatic-video').length
+    && $(window).width() > 767
+    /*&& $('.animatic-loader').is(':visible')*/
+) {
+  APPS.initAudioTracks();
+  APPS.initAnimatic();
+}
+
+function updateElementRotation( elem, now ) {
+  $( elem ).css('-webkit-transform','rotate(' + now + 'deg)');
+  $( elem ).css('-moz-transform','rotate(' + now + 'deg)');
+  $( elem ).css('-ms-transform','rotate(' + now + 'deg)');
+  $( elem ).css('-o-transform','rotate(' + now + 'deg)');
+  $( elem ).css('transform','rotate(' + now + 'deg)');
+}
+
+var animationInProgress = false;
+var currentSection = 1;
+var previousSection = 0;
+var mute = false;
+var firstStepPassed = false;
+
+
+
+if(typeof section_ids != 'undefined' ){
+  var stepsUrls = slide_ids;
+}
+
+function animateBg( element, from, to, callback, duration ) {
+  duration = duration || 200;
+  $( from ).animate( to, {
+    step: function( now, fx ) {
+      if( fx.prop == 'rotate' ) {
+        updateElementRotation(element, now);
+      } else if( fx.prop == 'left' ) {
+        $( element ).css( 'left', now + '%' );
+      }
+    },
+    complete: function() {
+      callback();
+    },
+    duration:  duration
+  });
+}
+
+function sectionAnimate( prevElem, currElem, nextElem ) {
+  animationInProgress = true;
+  $( '.app-product-section-content.section-' + previousSection ).fadeOut();
+  if(
+    ( previousSection > currentSection && previousSection != stepsUrls.length ) ||
+    ( previousSection == 1 && currentSection == stepsUrls.length ) ||
+    ( previousSection == stepsUrls.length && currentSection == ( stepsUrls.length - 1 ) )
+  ) {
+    prevElem = $( '.app-product-section.section-' + ( previousSection + 1 ) );
+    currElem = $( '.app-product-section.section-' + ( previousSection == 1 && currentSection == stepsUrls.length ? stepsUrls.length + 1 : previousSection ) );
+    nextElem = $( '.app-product-section.section-' + currentSection );
+    $( 'body' ).css( 'background-color', currElem.css( 'background-color' ) );
+    $( { bg: 0 }).animate( {bg: 1}, 200, function() {
+      animateBg(prevElem, {rotate: 0, left: 50}, {rotate: 15, left: 75}, function () {
+        animateBg(prevElem, {rotate: 15, left: 75}, {rotate: -15, left: 100}, function () {
+          animateBg(prevElem, {rotate: -15}, {rotate: 0}, function () {
+            animateBg(currElem, {left: -50}, {left: 0}, function () {
+              if( previousSection == 1 && currentSection == stepsUrls.length  ) {
+                $( { left: 0 } ).animate( { left: 100 }, {
+                  step: function( now ){
+                    $( '.app-product-section.section-1' ).css( 'left', now + '%' );
+                  }
+                });
+              }
+              $('.app-product-section-content.section-' + currentSection).css({
+                opacity: 0,
+                display: 'table'
+              }).animate({opacity: 1});
+              animateBg(nextElem, {rotate: 0, left: -100}, {rotate: -15, left: -75}, function () {
+                animateBg(nextElem, {rotate: -15, left: -75}, {rotate: 15, left: -50}, function () {
+                  animateBg(nextElem, {rotate: 15}, {rotate: 0}, function () {
+                    $('body').css('background-color', '');
+                    animationInProgress = false;
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  } else {
+    $( 'body').css( 'background-color', currElem.css( 'background-color' ) );
+    animateBg(prevElem, {rotate: 0, left: -50}, {rotate: -15, left: -75}, function () {
+      animateBg(prevElem, {rotate: -15, left: -75}, {rotate: 15, left: -100}, function () {
+        animateBg(prevElem, {rotate: 15}, {rotate: 0}, function () {
+          animateBg(currElem, {left: 0}, {left: -50}, function () {
+            $('.app-product-section-content.section-' + currentSection).css({
+              opacity: 0,
+              display: 'table'
+            }).animate({opacity: 1});
+            animateBg(nextElem, {rotate: 0, left: 100}, {rotate: 15, left: 75}, function () {
+              animateBg(nextElem, {rotate: 15, left: 75}, {rotate: -15, left: 50}, function () {
+                animateBg(nextElem, {rotate: -15, left: 50}, {rotate: 0, left: 0}, function () {
+                  $('body').css('background-color', '');
+                  animationInProgress = false;
+                });
+              });
+            });
+          }, 50);
+        });
+      });
+    });
+  }
+}
+
+$( function() {
+  if( $( '#animatic-video').length ) {
+    var animatic = $('#animatic-video')[0];
+    var currentStep = 'scroll';
+    var steps = {
+      scroll: {
+        time: 2.4,
+        nextStep: 'pull'
+      },
+      pull: {
+        time: 9.2,
+        nextStep: 'blend'
+      },
+      blend: {
+        time: 15.5,
+        nextStep: 'squeeze'
+      },
+      squeeze: {
+        time: 23.2,
+        nextStep: 'twitch'
+      },
+      twitch: {
+        time: 100,
+        nextStep: 'end'
+      }
+    };
+
+    $( '#animatic-music-first').on( 'ended', function() {
+      if( !APPS.animaticLoaded ) return;
+      $( ".start-animatic" ).fadeTo( "fast" , 1, function() {
+        firstStepPassed = true;
+      });
+    });
+
+    //$( '#animatic-music-first').on( 'play', function() {
+    //  setTimeout( function() {
+    //    $( ".animatic-index-description" ).fadeTo( "fast" , 1 );
+    //  }, 1000);
+    //});
+
+    $(document).keydown(function (e) {
+      e.preventDefault();
+      switch (e.which) {
+        case 32:
+          if( currentStep == 'scroll' && firstStepPassed ) {
+            $( '.start-animatic').click();
+          }
+          break;
+        case 65:
+          if( currentStep  == 'pull' ) {
+            playStep();
+          }
+          break;
+        case 80:
+          if( currentStep == 'blend' || currentStep == 'squeeze' ) {
+            playStep();
+          }
+          break;
+        case 83:
+          if( currentStep == 'twitch' ) {
+            playStep();
+          }
+          break;
+        default:
+          return;
+      }
+    });
+
+    function playStep() {
+      if( !mute && $('#animatic-music-' + currentStep).length ) {
+        $('#animatic-music-' + currentStep)[0].play();
+      }
+      $( '.key-animatic-key-' + currentStep).fadeOut();
+      $( '.key-animatic-key-' + currentStep).find( '.right-dash').css('width','0px');
+      $( '.key-animatic-key-' + currentStep).find( '.vertical-dash').css('height','0px');
+      animatic.play();
+    }
+
+    function buttonHelper( method ) {
+      var fxValues = {
+        pull: {
+          rightDash: {
+            start: 0,
+            end: 0
+          },
+          verticalDash: {
+            start: 0,
+            end: 290,
+            units: 'px'
+          }
+        },
+        blend: {
+          rightDash: {
+            start: 0,
+            end: 290
+          },
+          verticalDash: {
+            start: 0,
+            end: 0
+          }
+        },
+        squeeze: {
+          rightDash: {
+            start: 0,
+            end: 475
+          },
+          verticalDash: {
+            start: 0,
+            end: 0
+          }
+        },
+        twitch: {
+          rightDash: {
+            start: 0,
+            end: 350
+          },
+          verticalDash: {
+            start: 0,
+            end: 0
+          }
+        }
+      };
+      $( '.key-animatic-key-' + method ).show();
+      $( '.key-animatic-key-' + method + ' .key-animatic-key-button' ).fadeIn( function() {
+        $( { width: fxValues[ method ].rightDash.start } ).animate( { width: fxValues[ method ].rightDash.end }, {
+          step: function( now, fx ) {
+            $( '.key-animatic-key-' + method + ' .right-dash' ).css( 'width', now + 'px' );
+          },
+          complete: function( ) {
+            $( { height: fxValues[ method ].verticalDash.start } ).animate( { height: fxValues[ method ].verticalDash.end }, {
+              step: function( now, fx ) {
+                var units = fxValues[ method ].verticalDash.units || '%';
+                $( '.key-animatic-key-' + method + ' .vertical-dash' ).css( 'height', now + units );
+              },
+              complete: function() {
+                $( '.key-animatic-key-' + method + ' .key-animatic-key-helper img').css( 'visibility', 'visible' );
+              }
+            });
+          }
+        });
+      });
+    }
+
+    $( '.key-animatic-key-button img').click( function() {
+      playStep();
+    });
+
+    $( '.start-animatic' ).click( function( e ) {
+      e.preventDefault();
+      $( '.animatic-hotkeys').fadeOut();
+      playStep();
+      APPS.mediaElements.audio[0].status.catch(error => {
+          // Auto-play was prevented
+          $( '#animatic-music-bg' )[ 0 ].play();
+      });
+    });
+
+    $( '.animatic-audio' ).click( function() {
+      $( this ).find( 'img' ).toggleClass( 'hide' );
+      mute = !mute;
+      if( mute ) {
+        $( '#animatic-music-bg' )[ 0 ].pause();
+        $( '.animatic-music-step').each( function() {
+          $( this )[ 0 ].muted = true;
+        });
+      } else {
+        $( '#animatic-music-bg' )[ 0 ].play();
+        $( '.animatic-music-step').each( function() {
+          $( this )[ 0 ].muted = false;
+        });
+      }
+    });
+
+    $('#animatic-video').on('timeupdate', function () {
+      if( !APPS.animaticLoaded ) return;
+      if (currentStep) {
+        if (this.currentTime > steps[currentStep].time) {
+          $('#animatic-' + steps[currentStep].nextStep).fadeIn();
+          currentStep = steps[currentStep].nextStep;
+          this.pause();
+          buttonHelper( currentStep );
+        }
+      } else {
+        animatic.stop();
+      }
+    });
+
+    $('#animatic-video').on('ended', function () {
+      if(!APPS.animaticLoaded) return;
+      $( '.animatic-end').css( 'opacity', '0' );
+      $( '.animatic-end').css( 'display', 'table-cell' );
+      $( '.animatic-end').animate( {
+        opacity: 1
+      });
+    });
+
+    $( '#animatic-again').on( 'click', function( e ) {
+      e.preventDefault();
+      $( '.start-animatic, .animatic-index-description, .animatic-index-title' ).css( "opacity" , 0);
+      firstStepPassed = false;
+      $( '.animatic-end').fadeOut( function() {
+        $( '.animatic-hotkeys').fadeIn( function () {
+          $( '.animatic-index-title').fadeTo( 'slow', 1, function() {
+            $( ".animatic-index-description" ).fadeTo( "slow" , 1 );
+          });
+        });
+        $( '#animatic-music-first')[ 0 ].play();
+      });
+      currentStep = 'scroll';
+      animatic.currentTime = 0;
+    });
+  }
+
+  var bottleSizeHandler = null;
+  var fromCircle = false;
+
+  function updateSectionWithoutAnimation() {
+    currentSection = stepsUrls.indexOf( window.location.hash.substr( 1, window.location.hash.length ) ) + 1;
+    if( currentSection !== 0 ) {
+      $( '.app-product-section-content[class*="section-"]').css( 'display', 'none' );
+      $( '.app-product-section-content.section-' + currentSection ).css( 'display', 'table' );
+      $( '.app-product-section[class*="section-"]').css( 'left', '-100%' );
+      $( '.app-product-section.section-' + currentSection ).css( 'left', '-50%' );
+      $( '.app-product-section.section-' + ( currentSection + 1 ) ).css( 'left', '0' );
+      $( '.circle' ).removeClass( 'active' );
+      $( '.circle-' + stepsUrls[ currentSection - 1 ]).addClass( 'active' );
+    } else {
+      $( '.app-product-section-content[class*="section-"]').css( 'display', 'none' );
+      $( '.app-product-section-content.section-1' ).css( 'display', 'table' );
+      currentSection = 1;
+      $( '.circle' ).removeClass( 'active' );
+      $( '.circle-' + stepsUrls[ 0 ]).addClass( 'active' );
+    }
+  }
+if(typeof section_ids != 'undefined' ){
+  if( window.location.hash ) {
+    updateSectionWithoutAnimation();
+  } else {
+    $( '.app-product-section-content.section-1' ).css( 'display', 'table' );
+    $( '.circle' ).removeClass( 'active' );
+    $( '.circle-' + stepsUrls[ 0 ]).addClass( 'active' );
+  }
+}
+
+  function maxProductImageHeight() {
+    $( '.app-product-image').css( 'max-height', $( '.section-contents').height() - 200 );
+  }
+  maxProductImageHeight();
+
+  $( window ).on( 'resize orientationchange', function() {
+    clearTimeout( bottleSizeHandler );
+    bottleSizeHandler = setTimeout( maxProductImageHeight, 500 );
+  } );
+
+  function updateSection() {
+    if( fromCircle ) {
+      updateSectionWithoutAnimation();
+      fromCircle = false;
+    } else {
+      sectionAnimate(
+        $('.app-product-section.section-' + ( ( currentSection - 1 ) == 0 ? stepsUrls.length : ( currentSection - 1 ) )),
+        $('.app-product-section.section-' + currentSection),
+        $('.app-product-section.section-' + ( currentSection + 1 ))
+      );
+      if (currentSection == 1) {
+        $({left: 0}).animate({left: -100}, {
+          step: function (now) {
+            $('.app-product-section.section-' + ( stepsUrls.length + 1)).css('left', now + '%');
+          }
+        });
+      }
+    }
+  }
+
+  $( '.circle' ).click( function() {
+    $( '.circle' ).removeClass( 'active' );
+    $( this ).addClass( 'active' );
+    previousSection = currentSection;
+    currentSection = $( this ).index() + 1;
+    fromCircle = true;
+    window.location.hash = stepsUrls[ currentSection - 1 ];
+  });
+
+  $( window ).on('hashchange', updateSection);
+
+  $( '.app-product-section-prev' ).click( function( e ) {
+    e.preventDefault();
+    if( animationInProgress ) return;
+    previousSection = currentSection;
+    currentSection--;
+    if( !stepsUrls[ currentSection - 1 ] ) {
+      currentSection = stepsUrls.length;
+    }
+    $( '.circle' ).removeClass( 'active' );
+    $( '.circle-' + stepsUrls[ currentSection - 1 ]).addClass( 'active' );
+    window.location.hash = stepsUrls[ currentSection - 1 ];
+  });
+
+  $( '.app-product-section-next').click( function( e ) {
+    e.preventDefault();
+    if( animationInProgress ) return;
+    previousSection = currentSection;
+    currentSection++;
+    if( !stepsUrls[ currentSection - 1 ] ) {
+      currentSection = 1;
+    }
+    $( '.circle' ).removeClass( 'active' );
+    $( '.circle-' + stepsUrls[ currentSection - 1 ]).addClass( 'active' );
+    window.location.hash = stepsUrls[ currentSection - 1 ];
+  });
+
+  $('#btn-age-no').click( function( e ) {
+    e.preventDefault();
+    $( '#age-block-no').removeClass( 'hide' );
+    $( this ).addClass( 'active' );
+  });
+
+  $('.btn-age-yes').click( function(e) {
+    e.preventDefault();
+    $(this).closest('.apps-age-page-content').addClass('hidden');
+    if ( window.location.pathname == '/' || window.location.pathname == '/'+curr_l+'/' ) {
+      if ( !APPS.animaticLoaded ) {
+          $('.animatic-loader').fadeIn();
+      } else {
+          launchMedia();
+      }
+    }
+
+    var date = new Date(new Date().getTime() + 259200 * 1000);  //3 days
+    document.cookie = "age_true=checked; path=/; expires=" + date.toUTCString();
+  });
+
+  if( $('.apps-product-page').length ) {
+    $(document).keydown(function (e) {
+      e.preventDefault();
+      switch (e.which) {
+        case 37:
+          $('.app-product-section-prev').click();
+          break;
+        case 39:
+          $('.app-product-section-next').click();
+          break;
+        default:
+          return;
+      }
+    });
+  }
+
+  $( '.mobile-menu-icon').click( function() {
+    $( 'body').css( 'overflow-x', 'hidden');
+    var from = $( this).hasClass( 'active' ) ? 150 : 0;
+    var to = $( this).hasClass( 'active' ) ? 0 : 150;
+    $( { left: from }).animate( { left: to }, {
+      step: function( now ) {
+        $( '.mobile-side-menu' ).css( 'left', ( now - 150 ) + 'px' );
+        $( '.inner-content' ).css( 'padding-left', now + 'px' );
+        $( '.inner-content').css( 'width', $( 'body' ).width() + now );
+        $( '.footer-alco').css( {
+          'width': ( $( 'body' ).width() - now ) + now ,
+          'margin-left': now + 'px'
+        });
+      },
+      complete: function() {
+        if( !$( '.mobile-menu-icon').hasClass( 'active' ) ) {
+          $( '.inner-content, .footer-alco' ).removeAttr('style');
+        }
+      }
+    });
+    $( this ).toggleClass( 'active' );
+  });
+
+  $( '.mobile-product-circles a' ).click( function( e ) {
+    e.preventDefault();
+    $( '.mobile-product-circles a img').removeClass( 'active' );
+    $( this).find( 'img').addClass( 'active' );
+    $( '.app-product-section-content').hide();
+    $( '.app-product-section-content').eq( $( this).index() ).show();
+    $( 'body').removeClass( 'green-section orange-section blue-section purple-section dark-orange-section' );
+    $( 'body').addClass( $( this ).data( 'section' ) + '-section' ).css('background-color',section_colors[$( this).index()]);
+    $('html,body').scrollTop( 0 );
+  });
+});

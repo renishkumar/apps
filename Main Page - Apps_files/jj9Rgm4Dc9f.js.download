@@ -1,0 +1,3 @@
+if (self.CavalryLogger) { CavalryLogger.start_js(["5h2VN"]); }
+
+__d("SRTVideoData",[],(function(a,b,c,d,e,f){"use strict";__p&&__p();var g=null;a=function(){__p&&__p();function a(){this.$1=null}a.getInstance=function(){g||(g=new a());return g};var b=a.prototype;b.setJobID=function(a){this.$1=a};b.unsetJobID=function(){this.$1=null};b.getJobID=function(){return this.$1};return a}();e.exports=a}),null);

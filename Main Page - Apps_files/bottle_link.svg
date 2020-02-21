@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="13px" height="40px" viewBox="0 0 13 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <!-- Generator: Sketch 3.3 (11970) - http://www.bohemiancoding.com/sketch -->
+    <title>bottle</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="bottle" sketch:type="MSLayerGroup" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.462,13.536 L8.816,5.788 L9.058,1.461 L7.228,0.988 L5.753,0.988 L3.924,1.461 L4.166,5.788 L3.52,13.536" id="path-1" sketch:type="MSShapeGroup"></path>
+            <path d="M1.02,20.498 C1.02,17.149 3.469,14.285 6.491,14.285 C9.512,14.285 11.962,17.149 11.962,20.498" id="path-2" sketch:type="MSShapeGroup"></path>
+            <path d="M12.012,22.668 L11.995,37.7 C11.995,38.421 11.356,39.011 10.575,39.011 L2.407,39.011 C1.626,39.011 0.987,38.421 0.987,37.7 L1.004,22.668" id="path-3" sketch:type="MSShapeGroup"></path>
+        </g>
+    </g>
+</svg>
